@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ARIMA Financial AI Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para gráficos realistas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Canva SDK -->
+    <script src="/_sdk/element_sdk.js"></script>
+    <style>
+      body {
+        box-sizing: border-box;
+      }
+
+      .app-gradient-bg {
+        background: linear-gradient(
+          135deg,
+          #0a0520 0%,
+          #1a0f2e 50%,
+          #0f0419 100%
+        );
+      }
+
+      .glass-card {
+        background: rgba(10, 5, 32, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(115, 4, 215, 0.25);
+      }
+
+      .grid-overlay {
+        background-image: linear-gradient(
+            to right,
+            rgba(115, 4, 215, 0.05) 1px,
+            transparent 1px
+          ),
+          linear-gradient(
+            to bottom,
+            rgba(115, 4, 215, 0.05) 1px,
+            transparent 1px
+          );
+        background-size: 50px 50px;
+      }
+
+      @keyframes pulse-neon {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
+      }
+
+      .live-indicator {
+        animation: pulse-neon 2s ease-in-out infinite;
+      }
+
+      .ticker-number {
+        font-family: "Courier New", monospace;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .focus-ring:focus-visible {
+        outline: 2px solid #77c914;
+        outline-offset: 3px;
+      }
+
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(15, 5, 32, 0.4);
+      }
+
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(115, 4, 215, 0.5);
+        border-radius: 3px;
+      }
+
+      .glow-on-hover:hover {
+        box-shadow: 0 0 25px rgba(115, 4, 215, 0.4);
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .animate-slide-up {
+        animation: slideUp 0.4s ease-out;
+      }
+
+      .nav-link {
+        position: relative;
+        transition: color 0.3s ease;
+      }
+
+      .nav-link::after {
+        content: "";
+        position: absolute;
+        bottom: -4px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: linear-gradient(90deg, #7304d7, #fb038e);
+        transition: width 0.3s ease;
+      }
+
+      .nav-link:hover::after {
+        width: 100%;
+      }
+
+      .mobile-menu {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease-out;
+      }
+
+      .mobile-menu.open {
+        max-height: 500px;
+      }
+
+      .gradient-text {
+        background: linear-gradient(135deg, #7304d7, #fb038e, #77c914);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .neon-glow {
+        box-shadow: 0 0 15px rgba(119, 201, 20, 0.5);
+      }
+    </style>
+    <style>
+      @view-transition {
+        navigation: auto;
+      }
+    </style>
+    <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  </head>
+  <body class="h-full w-full m-0 app-gradient-bg text-slate-100 antialiased">
+    <div id="app-root" class="h-full w-full overflow-auto custom-scrollbar">
+      <!-- Navbar responsivo moderno -->
+      <nav
+        class="w-full border-b border-purple-900/30 glass-card sticky top-0 z-50"
+      >
+        <div class="max-w-7xl mx-auto px-4 md:px-6">
+          <div class="flex items-center justify-between h-16">
+            <!-- Logo y marca -->
+            <div class="flex items-center gap-3">
+              <div
+                class="w-12 h-12 rounded-sm bg-black border-4 border-lime-400 flex items-center justify-center neon-glow pixel-corners"
+              >
+                <svg
+                  class="w-7 h-7 text-lime-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewbox="0 0 24 24"
+                  aria-hidden="true"
+                  style="filter: drop-shadow(0 0 8px #77c914)"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="3"
+                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                  />
+                </svg>
+              </div>
+              <div class="hidden sm:block">
+                <h1
+                  id="app-title"
+                  class="text-sm md:text-base font-bold gradient-text"
+                >
+                  ARIMA AI
+                </h1>
+                <p
+                  class="text-[9px] text-pink-400 flex items-center gap-1.5 retro-text"
+                >
+                  <span
+                    class="w-2 h-2 rounded-sm bg-lime-400 live-indicator"
+                  ></span>
+                  <span id="live-status">LIVE</span>
+                </p>
+              </div>
+            </div>
+            <!-- Links de navegación desktop -->
+            <div class="hidden lg:flex items-center gap-8">
+              <a
+                href="#dashboard"
+                class="nav-link text-sm font-medium text-slate-300 hover:text-white"
+                >Dashboard</a
+              >
+              <a
+                href="#analytics"
+                class="nav-link text-sm font-medium text-slate-300 hover:text-white"
+                >Analytics</a
+              >
+              <a
+                href="#models"
+                class="nav-link text-sm font-medium text-slate-300 hover:text-white"
+                >Models</a
+              >
+              <a
+                href="#portfolio"
+                class="nav-link text-sm font-medium text-slate-300 hover:text-white"
+                >Portfolio</a
+              >
+              <a
+                href="#settings"
+                class="nav-link text-sm font-medium text-slate-300 hover:text-white"
+                >Settings</a
+              >
+            </div>
+            <!-- Ticker en tiempo real + acciones -->
+            <div class="flex items-center gap-3">
+              <!-- Mini ticker horizontal (oculto en móvil) -->
+              <div
+                class="hidden md:flex items-center gap-3 text-xs border-l border-purple-900/30 pl-4"
+              >
+                <div class="flex items-center gap-1.5">
+                  <span class="text-slate-500">AAPL</span>
+                  <span
+                    id="ticker-aapl"
+                    class="ticker-number text-lime-400 font-semibold"
+                    >178.42</span
+                  >
+                  <span class="text-lime-400 text-[10px]">+2.3%</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-slate-500">MSFT</span>
+                  <span
+                    id="ticker-msft"
+                    class="ticker-number text-lime-400 font-semibold"
+                    >412.89</span
+                  >
+                  <span class="text-lime-400 text-[10px]">+1.8%</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-slate-500">GOOGL</span>
+                  <span
+                    id="ticker-googl"
+                    class="ticker-number text-pink-400 font-semibold"
+                    >142.15</span
+                  >
+                  <span class="text-pink-400 text-[10px]">-0.5%</span>
+                </div>
+              </div>
+              <!-- Botón de notificaciones -->
+              <button
+                type="button"
+                class="focus-ring hidden md:flex items-center justify-center w-9 h-9 rounded-lg bg-purple-900/30 hover:bg-purple-800/40 border border-purple-700/30 transition-colors"
+                aria-label="Notificaciones"
+              >
+                <svg
+                  class="w-5 h-5 text-slate-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewbox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
+                </svg>
+              </button>
+              <!-- Botón de usuario -->
+              <button
+                type="button"
+                class="focus-ring hidden md:flex items-center gap-2 arcade-button px-3 py-2"
+                aria-label="Perfil de usuario"
+              >
+                <div
+                  class="w-6 h-6 rounded-sm bg-lime-400 flex items-center justify-center"
+                >
+                  <span class="text-xs font-bold text-black">AI</span>
+                </div>
+                <span class="retro-text">ADMIN</span>
+              </button>
+              <!-- Botón menú móvil -->
+              <button
+                id="mobile-menu-btn"
+                type="button"
+                class="focus-ring lg:hidden flex items-center justify-center w-10 h-10 rounded-lg bg-purple-900/30 hover:bg-purple-800/40 border border-purple-700/30 transition-colors"
+                aria-label="Menú de navegación"
+                aria-expanded="false"
+              >
+                <svg
+                  id="menu-icon"
+                  class="w-6 h-6 text-slate-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewbox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+                <svg
+                  id="close-icon"
+                  class="w-6 h-6 text-slate-300 hidden"
+                  fill="none"
+                  stroke="currentColor"
+                  viewbox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <!-- Menú móvil desplegable -->
+          <div
+            id="mobile-menu"
+            class="mobile-menu lg:hidden border-t border-purple-900/30"
+          >
+            <div class="py-4 space-y-3">
+              <a
+                href="#dashboard"
+                class="block px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-purple-900/20 rounded-lg transition-colors"
+                >📊 Dashboard</a
+              >
+              <a
+                href="#analytics"
+                class="block px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-purple-900/20 rounded-lg transition-colors"
+                >📈 Analytics</a
+              >
+              <a
+                href="#models"
+                class="block px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-purple-900/20 rounded-lg transition-colors"
+                >🤖 Models</a
+              >
+              <a
+                href="#portfolio"
+                class="block px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-purple-900/20 rounded-lg transition-colors"
+                >💼 Portfolio</a
+              >
+              <a
+                href="#settings"
+                class="block px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-purple-900/20 rounded-lg transition-colors"
+                >⚙�� Settings</a
+              >
+              <!-- Ticker móvil -->
+              <div
+                class="md:hidden px-4 pt-3 border-t border-purple-900/30 space-y-2"
+              >
+                <p class="text-xs font-semibold text-slate-400 mb-2">
+                  Market Tickers
+                </p>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-slate-400">AAPL</span>
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="ticker-number text-lime-400 font-semibold text-sm"
+                      >178.42</span
+                    >
+                    <span class="text-lime-400 text-[10px]">+2.3%</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-slate-400">MSFT</span>
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="ticker-number text-lime-400 font-semibold text-sm"
+                      >412.89</span
+                    >
+                    <span class="text-lime-400 text-[10px]">+1.8%</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-xs text-slate-400">GOOGL</span>
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="ticker-number text-pink-400 font-semibold text-sm"
+                      >142.15</span
+                    >
+                    <span class="text-pink-400 text-[10px]">-0.5%</span>
+                  </div>
+                </div>
+              </div>
+              <!-- Botones de acción móvil -->
+              <div class="px-4 pt-3 border-t-2 border-purple-600 space-y-2">
+                <button
+                  type="button"
+                  class="focus-ring w-full arcade-button flex items-center justify-center gap-2 px-4 py-3"
+                >
+                  <div
+                    class="w-5 h-5 rounded-sm bg-lime-400 flex items-center justify-center"
+                  >
+                    <span class="text-[10px] font-bold text-black">AI</span>
+                  </div>
+                  <span>ADMIN</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <main class="w-full max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
+        <!-- Panel de control principal -->
+        <section class="grid md:grid-cols-[300px,1fr] gap-6">
+          <!-- Sidebar de controles -->
+          <aside
+            class="glass-card rounded-2xl p-4 space-y-4 h-fit glow-on-hover"
+          >
+            <div>
+              <h2 class="text-sm font-semibold mb-3 flex items-center gap-2">
+                <span>⚙️</span> <span>Configuración del Modelo</span>
+              </h2>
+              <form
+                id="model-form"
+                class="space-y-3"
+                aria-label="Configuración de análisis"
+              >
+                <div>
+                  <label
+                    for="ticker-select"
+                    class="block text-xs text-slate-300 mb-1.5"
+                    >Ticker / Símbolo</label
+                  >
+                  <select
+                    id="ticker-select"
+                    class="focus-ring w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100"
+                  >
+                    <option value="AAPL">AAPL - Apple Inc.</option>
+                    <option value="MSFT">MSFT - Microsoft</option>
+                    <option value="GOOGL">GOOGL - Alphabet</option>
+                    <option value="TSLA">TSLA - Tesla</option>
+                    <option value="AMZN">AMZN - Amazon</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    for="model-select"
+                    class="block text-xs text-slate-300 mb-1.5"
+                    >Modelo de Pronóstico</label
+                  >
+                  <select
+                    id="model-select"
+                    class="focus-ring w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100"
+                  >
+                    <option value="arima">ARIMA (p,d,q)</option>
+                    <option value="prophet">Prophet (Facebook)</option>
+                    <option value="lstm">LSTM Neural Network</option>
+                    <option value="ensemble">Ensemble (Combinado)</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    for="horizon-select"
+                    class="block text-xs text-slate-300 mb-1.5"
+                    >Horizonte de Pronóstico</label
+                  >
+                  <select
+                    id="horizon-select"
+                    class="focus-ring w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100"
+                  >
+                    <option value="7">7 días</option>
+                    <option value="14">14 días</option>
+                    <option value="30" selected>30 días</option>
+                    <option value="60">60 días</option>
+                    <option value="90">90 días</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    for="confidence-select"
+                    class="block text-xs text-slate-300 mb-1.5"
+                    >Intervalo de Confianza</label
+                  >
+                  <select
+                    id="confidence-select"
+                    class="focus-ring w-full bg-slate-900/80 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100"
+                  >
+                    <option value="80">80%</option>
+                    <option value="90">90%</option>
+                    <option value="95" selected>95%</option>
+                    <option value="99">99%</option>
+                  </select>
+                </div>
+                <button
+                  type="submit"
+                  class="focus-ring w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-medium py-2.5 rounded-lg text-sm transition-all shadow-lg"
+                >
+                  🚀 Ejecutar Análisis
+                </button>
+              </form>
+            </div>
+            <!-- Métricas del modelo -->
+            <div class="border-t border-slate-700/50 pt-4">
+              <h3 class="text-xs font-semibold text-slate-300 mb-3">
+                Métricas del Modelo
+              </h3>
+              <div class="space-y-2.5 text-xs">
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-400">MSE</span>
+                  <span
+                    id="metric-mse"
+                    class="ticker-number text-slate-100 font-semibold"
+                    >0.0134</span
+                  >
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-400">MAE</span>
+                  <span
+                    id="metric-mae"
+                    class="ticker-number text-slate-100 font-semibold"
+                    >0.0891</span
+                  >
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-400">RMSE</span>
+                  <span
+                    id="metric-rmse"
+                    class="ticker-number text-slate-100 font-semibold"
+                    >0.1158</span
+                  >
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-400">R² Score</span>
+                  <span
+                    id="metric-r2"
+                    class="ticker-number text-green-400 font-semibold"
+                    >0.9247</span
+                  >
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-slate-400">MAPE</span>
+                  <span
+                    id="metric-mape"
+                    class="ticker-number text-slate-100 font-semibold"
+                    >2.14%</span
+                  >
+                </div>
+              </div>
+            </div>
+            <!-- Fuentes de datos -->
+            <div class="border-t border-slate-700/50 pt-4">
+              <h3 class="text-xs font-semibold text-slate-300 mb-3">
+                Fuentes de Datos
+              </h3>
+              <div class="space-y-2 text-xs">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-green-400"></span>
+                  <span class="text-slate-300">Yahoo Finance API</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-green-400"></span>
+                  <span class="text-slate-300">Alpha Vantage</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                  <span class="text-slate-300">TextBlob Sentiment</span>
+                </div>
+              </div>
+            </div>
+          </aside>
+          <!-- Área principal de gráficos -->
+          <div class="space-y-6">
+            <!-- Gráfico principal de pronóstico -->
+            <div
+              class="glass-card rounded-2xl p-5 glow-on-hover animate-slide-up"
+            >
+              <div
+                class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-3"
+              >
+                <div>
+                  <h2 class="text-base font-semibold flex items-center gap-2">
+                    <span>����</span>
+                    <span id="chart-title">Pronóstico ARIMA - AAPL</span>
+                  </h2>
+                  <p class="text-xs text-slate-400 mt-1">
+                    Histórico vs Predicción con intervalo de confianza 95%
+                  </p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="focus-ring px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-600 transition-colors"
+                  >
+                    📥 Exportar CSV
+                  </button>
+                  <button
+                    type="button"
+                    class="focus-ring px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-600 transition-colors"
+                  >
+                    📸 Captura
+                  </button>
+                </div>
+              </div>
+              <div class="relative h-80 md:h-96">
+                <canvas id="main-chart"></canvas>
+              </div>
+              <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                <div
+                  class="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50"
+                >
+                  <p class="text-slate-400 mb-1">Precio Actual</p>
+                  <p
+                    id="current-price"
+                    class="ticker-number text-lg font-bold text-slate-100"
+                  >
+                    $178.42
+                  </p>
+                  <p class="text-green-400 text-[10px] mt-0.5">
+                    +$4.12 (+2.36%)
+                  </p>
+                </div>
+                <div
+                  class="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50"
+                >
+                  <p class="text-slate-400 mb-1">Pronóstico 30d</p>
+                  <p
+                    id="forecast-price"
+                    class="ticker-number text-lg font-bold text-blue-400"
+                  >
+                    $192.58
+                  </p>
+                  <p class="text-blue-400 text-[10px] mt-0.5">
+                    +$14.16 (+7.94%)
+                  </p>
+                </div>
+                <div
+                  class="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50"
+                >
+                  <p class="text-slate-400 mb-1">Rango Superior</p>
+                  <p
+                    id="upper-bound"
+                    class="ticker-number text-lg font-bold text-slate-100"
+                  >
+                    $201.34
+                  </p>
+                  <p class="text-slate-400 text-[10px] mt-0.5">IC 95%</p>
+                </div>
+                <div
+                  class="bg-slate-900/50 rounded-lg p-3 border border-slate-700/50"
+                >
+                  <p class="text-slate-400 mb-1">Rango Inferior</p>
+                  <p
+                    id="lower-bound"
+                    class="ticker-number text-lg font-bold text-slate-100"
+                  >
+                    $183.82
+                  </p>
+                  <p class="text-slate-400 text-[10px] mt-0.5">IC 95%</p>
+                </div>
+              </div>
+            </div>
+            <!-- Gráficos secundarios -->
+            <div class="grid md:grid-cols-2 gap-6">
+              <!-- Volumen de trading -->
+              <div class="glass-card rounded-2xl p-5 glow-on-hover">
+                <h3
+                  class="retro-text font-semibold mb-4 flex items-center gap-2 text-pink-500"
+                >
+                  <span>📊</span> <span>VOLUME</span>
+                </h3>
+                <div class="relative h-48">
+                  <canvas id="volume-chart"></canvas>
+                </div>
+              </div>
+              <!-- Análisis de residuos -->
+              <div class="glass-card rounded-2xl p-5 glow-on-hover">
+                <h3
+                  class="retro-text font-semibold mb-4 flex items-center gap-2 text-pink-500"
+                >
+                  <span>📉</span> <span>RESIDUALS</span>
+                </h3>
+                <div class="relative h-48">
+                  <canvas id="residuals-chart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- Sección de características -->
+        <section class="glass-card rounded-2xl p-6 glow-on-hover">
+          <h2
+            id="hero-subtitle"
+            class="retro-text text-lg font-semibold mb-6 text-lime-400"
+          >
+            FEATURES
+          </h2>
+          <div class="grid md:grid-cols-3 gap-4 text-sm">
+            <div class="space-y-2">
+              <div class="flex items-start gap-3">
+                <span class="text-blue-400 text-lg">📈</span>
+                <div>
+                  <h3 class="font-semibold text-slate-100">
+                    Modelos Avanzados
+                  </h3>
+                  <p class="text-xs text-slate-400">
+                    ARIMA, Prophet, LSTM y modelos ensemble para pronósticos
+                    precisos
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-start gap-3">
+                <span class="text-green-400 text-lg">🎯</span>
+                <div>
+                  <h3 class="font-semibold text-slate-100">
+                    Métricas de Rendimiento
+                  </h3>
+                  <p class="text-xs text-slate-400">
+                    MSE, MAE, RMSE, R² y MAPE para evaluar precisión del modelo
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-start gap-3">
+                <span class="text-purple-400 text-lg">💡</span>
+                <div>
+                  <h3 class="font-semibold text-slate-100">
+                    Análisis de Sentimiento
+                  </h3>
+                  <p class="text-xs text-slate-400">
+                    Integración con TextBlob para análisis de noticias
+                    financieras
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-start gap-3">
+                <span class="text-cyan-400 text-lg">���</span>
+                <div>
+                  <h3 class="font-semibold text-slate-100">
+                    Visualización Interactiva
+                  </h3>
+                  <p class="text-xs text-slate-400">
+                    Gráficos dinámicos con intervalos de confianza y
+                    comparativas
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-start gap-3">
+                <span class="text-yellow-400 text-lg">⚡</span>
+                <div>
+                  <h3 class="font-semibold text-slate-100">
+                    Datos en Tiempo Real
+                  </h3>
+                  <p class="text-xs text-slate-400">
+                    Conexión con Yahoo Finance y Alpha Vantage APIs
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-start gap-3">
+                <span class="text-red-400 text-lg">🔄</span>
+                <div>
+                  <h3 class="font-semibold text-slate-100">
+                    Exportación de Datos
+                  </h3>
+                  <p class="text-xs text-slate-400">
+                    Descarga resultados en CSV, JSON y reportes PDF
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+      <!-- Footer con disclaimer -->
+      <footer class="w-full border-t border-slate-800/50 mt-8">
+        <div class="max-w-7xl mx-auto px-4 md:px-6 py-4">
+          <div
+            class="flex flex-col md:flex-row items-center justify-between gap-3 text-xs"
+          >
+            <p
+              id="disclaimer-text"
+              class="text-slate-400 text-center md:text-left"
+            >
+              ⚠️ SIMULADOR - Datos generados para demostración. No constituye
+              asesoría financiera.
+            </p>
+            <div class="flex items-center gap-4 text-slate-500">
+              <span>Powered by ARIMA AI</span> <span>•</span>
+              <span>v2.1.0</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+    <script>
+      // Configuración por defecto
+      const defaultConfig = {
+        app_title: "ARIMA Financial AI Dashboard",
+        hero_subtitle: "Capacidades del Dashboard",
+        disclaimer_text:
+          "⚠️ SIMULADOR - Datos generados para demostración. No constituye asesoría financiera.",
+        background_color: "#0a0e27",
+        surface_color: "#0a0e27",
+        text_color: "#e2e8f0",
+        primary_action_color: "#3b82f6",
+        secondary_action_color: "#0ea5e9",
+        font_family: "system-ui",
+        font_size: 16,
+      };
+
+      // Referencias DOM
+      const domRefs = {
+        appTitle: document.getElementById("app-title"),
+        heroSubtitle: document.getElementById("hero-subtitle"),
+        disclaimerText: document.getElementById("disclaimer-text"),
+        appRoot: document.getElementById("app-root"),
+        body: document.body,
+      };
+
+      // Función para generar datos simulados realistas
+      function generateStockData(days, startPrice, volatility = 0.02) {
+        const data = [];
+        let price = startPrice;
+        const now = new Date();
+
+        for (let i = days; i >= 0; i--) {
+          const date = new Date(now);
+          date.setDate(date.getDate() - i);
+
+          // Simulación de movimiento browniano
+          const change = (Math.random() - 0.48) * volatility * price;
+          price = Math.max(price + change, startPrice * 0.7);
+
+          data.push({
+            date: date.toISOString().split("T")[0],
+            price: parseFloat(price.toFixed(2)),
+          });
+        }
+
+        return data;
+      }
+
+      // Generar pronóstico
+      function generateForecast(lastPrice, days, trend = 0.001) {
+        const forecast = [];
+        let price = lastPrice;
+        const now = new Date();
+
+        for (let i = 1; i <= days; i++) {
+          const date = new Date(now);
+          date.setDate(date.getDate() + i);
+
+          price = price * (1 + trend + (Math.random() - 0.5) * 0.01);
+
+          forecast.push({
+            date: date.toISOString().split("T")[0],
+            price: parseFloat(price.toFixed(2)),
+            upper: parseFloat((price * 1.05).toFixed(2)),
+            lower: parseFloat((price * 0.95).toFixed(2)),
+          });
+        }
+
+        return forecast;
+      }
+
+      // Datos iniciales
+      const historicalData = generateStockData(90, 165);
+      const forecastData = generateForecast(
+        historicalData[historicalData.length - 1].price,
+        30
+      );
+
+      // Configuración de Chart.js
+      let mainChart, volumeChart, residualsChart;
+
+      function initCharts() {
+        const ctx1 = document.getElementById("main-chart");
+        const ctx2 = document.getElementById("volume-chart");
+        const ctx3 = document.getElementById("residuals-chart");
+
+        if (!ctx1 || !ctx2 || !ctx3) return;
+
+        // Gráfico principal
+        mainChart = new Chart(ctx1, {
+          type: "line",
+          data: {
+            labels: [
+              ...historicalData.map((d) => d.date),
+              ...forecastData.map((d) => d.date),
+            ],
+            datasets: [
+              {
+                label: "Precio Histórico",
+                data: [
+                  ...historicalData.map((d) => d.price),
+                  ...Array(forecastData.length).fill(null),
+                ],
+                borderColor: "#7304d7",
+                backgroundColor: "rgba(115, 4, 215, 0.1)",
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.4,
+              },
+              {
+                label: "Pronóstico ARIMA",
+                data: [
+                  ...Array(historicalData.length).fill(null),
+                  ...forecastData.map((d) => d.price),
+                ],
+                borderColor: "#77c914",
+                backgroundColor: "rgba(119, 201, 20, 0.1)",
+                borderWidth: 2,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                tension: 0.4,
+              },
+              {
+                label: "IC Superior 95%",
+                data: [
+                  ...Array(historicalData.length).fill(null),
+                  ...forecastData.map((d) => d.upper),
+                ],
+                borderColor: "rgba(119, 201, 20, 0.3)",
+                backgroundColor: "rgba(119, 201, 20, 0.05)",
+                borderWidth: 1,
+                pointRadius: 0,
+                fill: "+1",
+                tension: 0.4,
+              },
+              {
+                label: "IC Inferior 95%",
+                data: [
+                  ...Array(historicalData.length).fill(null),
+                  ...forecastData.map((d) => d.lower),
+                ],
+                borderColor: "rgba(119, 201, 20, 0.3)",
+                backgroundColor: "rgba(119, 201, 20, 0.05)",
+                borderWidth: 1,
+                pointRadius: 0,
+                tension: 0.4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: "index",
+              intersect: false,
+            },
+            plugins: {
+              legend: {
+                display: true,
+                position: "top",
+                labels: {
+                  color: "#cbd5e1",
+                  font: { size: 11 },
+                  usePointStyle: true,
+                  padding: 15,
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(10, 5, 32, 0.95)",
+                titleColor: "#e2e8f0",
+                bodyColor: "#cbd5e1",
+                borderColor: "#7304d7",
+                borderWidth: 1,
+                padding: 12,
+                displayColors: true,
+              },
+            },
+            scales: {
+              x: {
+                grid: {
+                  color: "rgba(115, 4, 215, 0.1)",
+                  drawBorder: false,
+                },
+                ticks: {
+                  color: "#94a3b8",
+                  font: { size: 10 },
+                  maxRotation: 0,
+                  autoSkip: true,
+                  maxTicksLimit: 8,
+                },
+              },
+              y: {
+                grid: {
+                  color: "rgba(115, 4, 215, 0.1)",
+                  drawBorder: false,
+                },
+                ticks: {
+                  color: "#94a3b8",
+                  font: { size: 10 },
+                  callback: function (value) {
+                    return "$" + value.toFixed(2);
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        // Gráfico de volumen
+        const volumeData = historicalData.map(
+          () => Math.floor(Math.random() * 50000000) + 20000000
+        );
+
+        volumeChart = new Chart(ctx2, {
+          type: "bar",
+          data: {
+            labels: historicalData.slice(-30).map((d) => d.date),
+            datasets: [
+              {
+                label: "Volumen",
+                data: volumeData.slice(-30),
+                backgroundColor: "rgba(251, 3, 142, 0.6)",
+                borderColor: "#fb038e",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: "rgba(10, 5, 32, 0.95)",
+                titleColor: "#e2e8f0",
+                bodyColor: "#cbd5e1",
+                borderColor: "#fb038e",
+                borderWidth: 1,
+                callbacks: {
+                  label: function (context) {
+                    return (
+                      "Volumen: " +
+                      (context.parsed.y / 1000000).toFixed(2) +
+                      "M"
+                    );
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: {
+                  color: "#94a3b8",
+                  font: { size: 9 },
+                  maxRotation: 0,
+                  autoSkip: true,
+                  maxTicksLimit: 6,
+                },
+              },
+              y: {
+                grid: {
+                  color: "rgba(115, 4, 215, 0.1)",
+                  drawBorder: false,
+                },
+                ticks: {
+                  color: "#94a3b8",
+                  font: { size: 9 },
+                  callback: function (value) {
+                    return (value / 1000000).toFixed(0) + "M";
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        // Gráfico de residuos
+        const residuals = historicalData
+          .slice(-30)
+          .map(() => (Math.random() - 0.5) * 5);
+
+        residualsChart = new Chart(ctx3, {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: "Residuos",
+                data: residuals.map((r, i) => ({ x: i, y: r })),
+                backgroundColor: "rgba(119, 201, 20, 0.6)",
+                borderColor: "#77c914",
+                pointRadius: 4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: "rgba(10, 5, 32, 0.95)",
+                titleColor: "#e2e8f0",
+                bodyColor: "#cbd5e1",
+                borderColor: "#77c914",
+                borderWidth: 1,
+              },
+            },
+            scales: {
+              x: {
+                grid: {
+                  color: "rgba(115, 4, 215, 0.1)",
+                  drawBorder: false,
+                },
+                ticks: {
+                  color: "#94a3b8",
+                  font: { size: 9 },
+                },
+              },
+              y: {
+                grid: {
+                  color: "rgba(115, 4, 215, 0.1)",
+                  drawBorder: false,
+                },
+                ticks: {
+                  color: "#94a3b8",
+                  font: { size: 9 },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Actualizar ticker en tiempo real
+      function updateTickers() {
+        const tickers = ["ticker-aapl", "ticker-msft", "ticker-googl"];
+        tickers.forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) {
+            const current = parseFloat(el.textContent);
+            const change = (Math.random() - 0.5) * 0.5;
+            el.textContent = (current + change).toFixed(2);
+          }
+        });
+      }
+
+      // Actualizar métricas
+      function updateMetrics() {
+        const metrics = {
+          "metric-mse": () => (Math.random() * 0.02 + 0.01).toFixed(4),
+          "metric-mae": () => (Math.random() * 0.1 + 0.05).toFixed(4),
+          "metric-rmse": () => (Math.random() * 0.15 + 0.08).toFixed(4),
+          "metric-r2": () => (Math.random() * 0.1 + 0.9).toFixed(4),
+          "metric-mape": () => (Math.random() * 2 + 1).toFixed(2) + "%",
+        };
+
+        Object.entries(metrics).forEach(([id, fn]) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = fn();
+        });
+      }
+
+      // Manejar formulario
+      const modelForm = document.getElementById("model-form");
+      if (modelForm) {
+        modelForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+
+          const ticker = document.getElementById("ticker-select").value;
+          const model = document.getElementById("model-select").value;
+          const horizon = document.getElementById("horizon-select").value;
+
+          const chartTitle = document.getElementById("chart-title");
+          if (chartTitle) {
+            const modelNames = {
+              arima: "ARIMA",
+              prophet: "Prophet",
+              lstm: "LSTM",
+              ensemble: "Ensemble",
+            };
+            chartTitle.textContent = `Pronóstico ${modelNames[model]} - ${ticker}`;
+          }
+
+          // Simular actualización de datos
+          updateMetrics();
+
+          // Mostrar feedback visual
+          const btn = modelForm.querySelector('button[type="submit"]');
+          if (btn) {
+            const originalText = btn.textContent;
+            btn.textContent = "⏳ Procesando...";
+            btn.disabled = true;
+
+            setTimeout(() => {
+              btn.textContent = "✅ Análisis Completo";
+              setTimeout(() => {
+                btn.textContent = originalText;
+                btn.disabled = false;
+              }, 1500);
+            }, 1200);
+          }
+        });
+      }
+
+      // Aplicar configuración
+      function applyConfigToUI(config) {
+        const cfg = Object.assign({}, defaultConfig, config || {});
+
+        if (domRefs.appTitle) domRefs.appTitle.textContent = cfg.app_title;
+        if (domRefs.heroSubtitle)
+          domRefs.heroSubtitle.textContent = cfg.hero_subtitle;
+        if (domRefs.disclaimerText)
+          domRefs.disclaimerText.textContent = cfg.disclaimer_text;
+
+        const bgColor = cfg.background_color || defaultConfig.background_color;
+        const textColor = cfg.text_color || defaultConfig.text_color;
+        const baseFont = cfg.font_family || defaultConfig.font_family;
+        const baseSize = Number(cfg.font_size || defaultConfig.font_size);
+
+        if (domRefs.body) {
+          domRefs.body.style.backgroundColor = bgColor;
+        }
+        if (domRefs.appRoot) {
+          domRefs.appRoot.style.color = textColor;
+          domRefs.appRoot.style.fontFamily =
+            baseFont + ", system-ui, sans-serif";
+          domRefs.appRoot.style.fontSize = baseSize + "px";
+        }
+      }
+
+      // Inicializar SDK
+      if (window.elementSdk && typeof window.elementSdk.init === "function") {
+        window.elementSdk.init({
+          defaultConfig,
+          onConfigChange: async (config) => {
+            applyConfigToUI(config);
+          },
+          mapToCapabilities: (config) => {
+            const cfg = Object.assign({}, defaultConfig, config || {});
+            return {
+              recolorables: [
+                {
+                  get: () => cfg.background_color,
+                  set: (value) => {
+                    cfg.background_color = value;
+                    if (window.elementSdk)
+                      window.elementSdk.setConfig({ background_color: value });
+                  },
+                },
+                {
+                  get: () => cfg.text_color,
+                  set: (value) => {
+                    cfg.text_color = value;
+                    if (window.elementSdk)
+                      window.elementSdk.setConfig({ text_color: value });
+                  },
+                },
+                {
+                  get: () => cfg.primary_action_color,
+                  set: (value) => {
+                    cfg.primary_action_color = value;
+                    if (window.elementSdk)
+                      window.elementSdk.setConfig({
+                        primary_action_color: value,
+                      });
+                  },
+                },
+              ],
+              borderables: [],
+              fontEditable: {
+                get: () => cfg.font_family,
+                set: (value) => {
+                  cfg.font_family = value;
+                  if (window.elementSdk)
+                    window.elementSdk.setConfig({ font_family: value });
+                },
+              },
+              fontSizeable: {
+                get: () => cfg.font_size,
+                set: (value) => {
+                  cfg.font_size = value;
+                  if (window.elementSdk)
+                    window.elementSdk.setConfig({ font_size: value });
+                },
+              },
+            };
+          },
+          mapToEditPanelValues: (config) => {
+            const cfg = Object.assign({}, defaultConfig, config || {});
+            return new Map([
+              ["app_title", cfg.app_title],
+              ["hero_subtitle", cfg.hero_subtitle],
+              ["disclaimer_text", cfg.disclaimer_text],
+            ]);
+          },
+        });
+      } else {
+        applyConfigToUI(defaultConfig);
+      }
+
+      // Funcionalidad del menú móvil
+      const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+      const mobileMenu = document.getElementById("mobile-menu");
+      const menuIcon = document.getElementById("menu-icon");
+      const closeIcon = document.getElementById("close-icon");
+
+      if (mobileMenuBtn && mobileMenu && menuIcon && closeIcon) {
+        mobileMenuBtn.addEventListener("click", () => {
+          const isOpen = mobileMenu.classList.contains("open");
+
+          if (isOpen) {
+            mobileMenu.classList.remove("open");
+            menuIcon.classList.remove("hidden");
+            closeIcon.classList.add("hidden");
+            mobileMenuBtn.setAttribute("aria-expanded", "false");
+          } else {
+            mobileMenu.classList.add("open");
+            menuIcon.classList.add("hidden");
+            closeIcon.classList.remove("hidden");
+            mobileMenuBtn.setAttribute("aria-expanded", "true");
+          }
+        });
+
+        // Cerrar menú al hacer clic en un enlace
+        const mobileLinks = mobileMenu.querySelectorAll("a");
+        mobileLinks.forEach((link) => {
+          link.addEventListener("click", () => {
+            mobileMenu.classList.remove("open");
+            menuIcon.classList.remove("hidden");
+            closeIcon.classList.add("hidden");
+            mobileMenuBtn.setAttribute("aria-expanded", "false");
+          });
+        });
+      }
+
+      // Inicializar todo
+      document.addEventListener("DOMContentLoaded", () => {
+        initCharts();
+        setInterval(updateTickers, 3000);
+        setInterval(updateMetrics, 8000);
+      });
+    </script>
+    <script>
+      (function () {
+        function c() {
+          var b = a.contentDocument || a.contentWindow.document;
+          if (b) {
+            var d = b.createElement("script");
+            d.innerHTML =
+              "window.__CF$cv$params={r:'9ac37e0971fbeef2',t:'MTc2NTQ0MDQ4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
+            b.getElementsByTagName("head")[0].appendChild(d);
+          }
+        }
+        if (document.body) {
+          var a = document.createElement("iframe");
+          a.height = 1;
+          a.width = 1;
+          a.style.position = "absolute";
+          a.style.top = 0;
+          a.style.left = 0;
+          a.style.border = "none";
+          a.style.visibility = "hidden";
+          document.body.appendChild(a);
+          if ("loading" !== document.readyState) c();
+          else if (window.addEventListener)
+            document.addEventListener("DOMContentLoaded", c);
+          else {
+            var e = document.onreadystatechange || function () {};
+            document.onreadystatechange = function (b) {
+              e(b);
+              "loading" !== document.readyState &&
+                ((document.onreadystatechange = e), c());
+            };
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>
